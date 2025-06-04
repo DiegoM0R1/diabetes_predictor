@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Procesando Datos - Predictor de Diabetes</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+            backdrop-filter: blur(10px);
+            max-width: 900px;
+            width: 100%;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #4a5568;
+            margin-bottom: 25px;
+            font-size: 2.2rem;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+            display: inline-block;
+        }
+        #status-message {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 30px;
+            min-height: 30px; /* Para evitar saltos de layout */
+        }
+        .loader {
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid #667eea;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 2s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .progress-bar-container {
+            width: 80%;
+            background-color: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 20px auto;
+            height: 25px;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        .stage-indicators {
+            display: flex;
+            justify-content: space-between;
+            width: 80%;
+            margin: 20px auto;
+        }
+        .stage-indicator {
+            width: 20px;
+            height: 20px;
+            background-color: #ddd;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+            font-weight: bold;
+            font-size: 0.8rem;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .stage-indicator.active {
+            background-color: #667eea;
+        }
+        .stage-indicator.completed {
+            background-color: #28a745;
+        }
+        .chart-container {
+            position: relative;
+            height: 400px;
+            width: 90%;
+            margin: 30px auto;
+            background: #f9f9f9;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            padding: 15px;
+        }
+        .nav-buttons {
+            margin-top: 25px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+        .nav-button {
+            background: linear-gradient(45deg, #007bff, #0056b3); /* Azul */
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            text-decoration: none; /* Para que parezca un botón */
+            display: inline-block;
+        }
+        .nav-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 123, 255, 0.4);
+        }
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            h1 {
+                font-size: 1.8rem;
+            }
+            #status-message {
+                font-size: 1rem;
+            }
+            .chart-container {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Procesando Datos del Modelo de Diabetes</h1>
+        <div class="loader"></div>
+        <p id="status-message">Iniciando...</p>
+
+        <div class="progress-bar-container">
+            <div class="progress-bar-fill" id="overall-progress">0%</div>
+        </div>
+
+        <div class="stage-indicators">
+            <div class="stage-indicator" id="stage-1">1</div>
+            <div class="stage-indicator" id="stage-2">2</div>
+            <div class="stage-indicator" id="stage-3">3</div>
+            <div class="stage-indicator" id="stage-4">4</div>
+            <div class="stage-indicator" id="stage-5">5</div>
+            <div class="stage-indicator" id="stage-6">6</div>
+            <div class="stage-indicator" id="stage-7">7</div>
+            <div class="stage-indicator" id="stage-8">8</div>
+        </div>
+        <p style="font-size: 0.9rem; color: #777;">
+            <strong>Etapas:</strong> 1. Iniciando H2O | 2. Cargando Datos | 3. Preprocesando | 4. Dividiendo Datos | 5. Configurando Modelo | 6. Entrenando Modelo | 7. Evaluando | 8. Finalizado
+        </p>
+
+    </div>
+
+    <div class="container">
+        <h2>Visualización del Aprendizaje en Tiempo Real</h2>
+        <div class="chart-container">
+            <canvas id="learningChart"></canvas>
+        </div>
+        <p style="font-size: 0.9rem; color: #777;">
+            Observa cómo el modelo se vuelve más "inteligente" a medida que el error de entrenamiento disminuye época tras época. Una divergencia entre la línea de entrenamiento y validación puede indicar sobreajuste.
+        </p>
+    </div>
+
+    <div class="nav-buttons">
+        <a href="{% url 'upload_csv' %}" class="nav-button">Regresar a Cargar CSV</a>
+    </div>
+
+    <script>
+        const statusMessage = document.getElementById('status-message');
+        const overallProgressBar = document.getElementById('overall-progress');
+        const stageIndicators = document.querySelectorAll('.stage-indicator');
+        const learningChartCanvas = document.getElementById('learningChart').getContext('2d');
+        let learningChart;
+
+        // Inicializar gráfico de aprendizaje
+        function initializeLearningChart() {
+            learningChart = new Chart(learningChartCanvas, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Error de Entrenamiento (Logloss)',
+                        data: [],
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }, {
+                        label: 'Error de Validación (Logloss)',
+                        data: [],
+                        borderColor: '#764ba2',
+                        backgroundColor: 'rgba(118, 75, 162, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Evolución del Error de Entrenamiento y Validación por Época'
+                        },
+                        legend: {
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Época'
+                            }
+                        },
+                        y: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Error (Logloss)'
+                            },
+                            min: 0,
+                            max: 1 // Los errores de logloss pueden superar 1, pero para visualización lo limitamos.
+                        }
+                    }
+                }
+            });
+        }
+
+        initializeLearningChart();
+
+        const ws_scheme = window.location.protocol === "https:" ? "wss" : "ws";
+        const ws_path = ws_scheme + '://' + window.location.host + "/ws/progress/";
+        const socket = new WebSocket(ws_path);
+
+        socket.onopen = function(e) {
+            console.log("WebSocket connection opened.", e);
+        };
+
+        socket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            console.log("Received message:", data);
+
+            if (data.type === 'redirect') {
+                statusMessage.textContent = 'Proceso completado. Redirigiendo al dashboard...';
+                overallProgressBar.style.width = '100%';
+                document.getElementById('stage-8').classList.add('completed');
+                setTimeout(() => {
+                    window.location.href = data.url;
+                }, 1000); // Dar un segundo para que el usuario vea el mensaje final
+                return;
+            }
+
+            statusMessage.textContent = data.message;
+            const currentStage = data.stage;
+
+            // Actualizar indicadores de etapa
+            stageIndicators.forEach((indicator, index) => {
+                const stageNumber = index + 1;
+                if (stageNumber < currentStage) {
+                    indicator.classList.remove('active');
+                    indicator.classList.add('completed');
+                } else if (stageNumber === currentStage) {
+                    indicator.classList.add('active');
+                    indicator.classList.remove('completed');
+                } else {
+                    indicator.classList.remove('active', 'completed');
+                }
+            });
+
+            // Actualizar barra de progreso general
+            // Esto es una simplificación, ya que el número total de etapas es 8
+            const progressPercentage = (currentStage / 8) * 100;
+            overallProgressBar.style.width = progressPercentage + '%';
+            overallProgressBar.textContent = Math.round(progressPercentage) + '%';
+
+
+            // Actualizar gráfico de aprendizaje si es un mensaje de progreso de época
+            if (data.type === 'progress_update') {
+                learningChart.data.labels.push(`Época ${data.epoch}`);
+                learningChart.data.datasets[0].data.push(data.train_error);
+                learningChart.data.datasets[1].data.push(data.valid_error);
+                learningChart.update();
+
+                // Desplazar el gráfico si hay demasiadas épocas
+                if (learningChart.data.labels.length > 20) { // Mostrar solo las últimas 20 épocas
+                    learningChart.data.labels.shift();
+                    learningChart.data.datasets[0].data.shift();
+                    learningChart.data.datasets[1].data.shift();
+                }
+            }
+        };
+
+        socket.onclose = function(e) {
+            console.log("WebSocket connection closed unexpectedly.", e);
+            statusMessage.textContent = 'Conexión con el servidor perdida. Por favor, recargue la página.';
+            overallProgressBar.style.width = '0%';
+        };
+
+        socket.onerror = function(e) {
+            console.error("WebSocket error:", e);
+            statusMessage.textContent = 'Error en la conexión. Por favor, revise la consola para más detalles.';
+        };
+    </script>
+</body>
+</html>
