@@ -108,7 +108,7 @@ Sigue estos pasos para configurar el proyecto en tu entorno local:
 ![Página de Procesamiento](https://i.imgur.com/2sY2T0G.png)
 
 **3. Dashboard de Resultados**
-![Dashboard de Resultados]([https://imgur.com/pwzd3r9](https://imgur.com/6mYc3wF))
+![Dashboard de Resultados](https://imgur.com/a/predictor-de-diabetes-con-ia-django-h2o-ai-dashboard-de-resultados-hyJ3yEd)
 
 
 ## 📄 Licencia
