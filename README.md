@@ -108,7 +108,7 @@ Sigue estos pasos para configurar el proyecto en tu entorno local:
 ![Página de Procesamiento](https://i.imgur.com/2sY2T0G.png)
 
 **3. Dashboard de Resultados**
-![Dashboard de Resultados](https://i.imgur.com/8Fk7L4j.png)
+![Dashboard de Resultados]([https://i.imgur.com/8Fk7L4j.png](https://imgur.com/a/WKKD4v3))
 
 
 ## 📄 Licencia
